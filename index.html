@@ -24,7 +24,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Serif TC', serif; }
     body { background-color: var(--bg-color); color: var(--text-main); padding: 1.5rem; min-height: 100vh; }
     
-    header { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; margin: 0 auto 1.5rem auto; flex-wrap: wrap; gap: 10px; }
+    header { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; margin: 0 auto 1rem auto; flex-wrap: wrap; gap: 10px; }
     header h1 { font-size: 1.6rem; letter-spacing: 2px; }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn { padding: 0.5rem 1rem; border: 1px solid var(--accent-border); border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
@@ -32,7 +32,10 @@
     .btn-primary { background: var(--accent-matcha); color: white; border: none; }
     .btn-primary:hover { background: #74876f; }
     .btn-danger { color: #b85c5c; border-color: #e8d3d8; }
-    .btn-danger:hover { background: #fdf5f5; }
+
+    /* 貼上匯入專用區塊 */
+    .import-box { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1rem; max-width: 1300px; margin: 0 auto 1.5rem auto; box-shadow: var(--shadow); }
+    .import-box textarea { width: 100%; height: 100px; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.5rem; background: #faf8f5; font-size: 0.85rem; resize: vertical; outline: none; }
 
     .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto 1.5rem auto; }
     .dash-card { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: var(--shadow); }
@@ -51,7 +54,7 @@
     
     .time-block { padding: 0.6rem; border-bottom: 1px dashed var(--accent-border); }
     .time-block:last-child { border-bottom: none; }
-    .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 4px; }
+    .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; }
     
     .task-list { list-style: none; }
     .task-item { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; font-size: 0.88rem; }
@@ -68,10 +71,18 @@
     <div class="toolbar">
       <button class="btn btn-primary" onclick="saveData(true)">💾 儲存計畫</button>
       <button class="btn" onclick="exportMarkdown()">📝 匯出 Markdown</button>
-      <button class="btn" onclick="importMarkdownPrompt()">📥 貼上/匯入 Markdown</button>
       <button class="btn btn-danger" onclick="resetTemplate()">🔄 重置範本</button>
     </div>
   </header>
+
+  <!-- 直接顯示在網頁上的貼上文字盒 -->
+  <div class="import-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+      <span style="font-size:0.9rem; font-weight:600;">📥 貼上 Markdown 文字還原計畫：</span>
+      <button class="btn btn-primary" onclick="parseFromTextarea()">解析並匯入</button>
+    </div>
+    <textarea id="importInput" placeholder="把你的 Markdown 文字直接貼在這裡，然後按「解析並匯入」..."></textarea>
+  </div>
 
   <div class="dashboard">
     <div class="dash-card">
@@ -86,7 +97,7 @@
       </h2>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
       <div style="margin-top:0.8rem; display:flex; gap:5px;">
-        <input type="text" id="habitInput" placeholder="新增每日習慣 (如: 喝水2000cc)..." style="flex:1; padding:0.4rem; border:1px solid var(--accent-border); border-radius:4px;">
+        <input type="text" id="habitInput" placeholder="新增每日習慣..." style="flex:1; padding:0.4rem; border:1px solid var(--accent-border); border-radius:4px;">
         <button class="btn" onclick="addHabit()">新增</button>
       </div>
       <ul id="habitList" style="list-style:none; margin-top:0.6rem;"></ul>
@@ -220,7 +231,7 @@
 
     function saveData(showAlert = false) {
       localStorage.setItem('pro_weekly_data', JSON.stringify(store));
-      if (showAlert) alert('✅ 計畫已成功儲存至 LocalStorage！');
+      if (showAlert) alert('✅ 計畫已成功儲存！');
     }
 
     function exportMarkdown() {
@@ -248,74 +259,70 @@
       a.click();
     }
 
-    function importMarkdownPrompt() {
-      const text = prompt("請貼上您的 Markdown 文字：");
-      if (text) {
-        parseAndLoadMarkdown(text);
+    // --- 從輸入框讀取並解析 ---
+    function parseFromTextarea() {
+      const mdText = document.getElementById('importInput').value.trim();
+      if (!mdText) {
+        alert('請先在下面的文字盒子貼上 Markdown 文字喔！');
+        return;
       }
-    }
 
-    // --- 強化版解析邏輯 (相容各種格式) ---
-    function parseAndLoadMarkdown(mdText) {
-      try {
-        let newGoal = '';
-        let newHabits = [];
-        let newTasks = [];
+      let newGoal = '';
+      let newHabits = [];
+      let newTasks = [];
 
-        const lines = mdText.split('\n');
-        let currentSection = '';
-        let currentDay = '';
-        let currentTime = 'morning';
+      const lines = mdText.split('\n');
+      let currentSection = '';
+      let currentDay = '';
+      let currentTime = 'morning';
 
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
 
-          if (trimmed.includes('本週核心目標')) { currentSection = 'goal'; return; }
-          if (trimmed.includes('習慣追蹤器')) { currentSection = 'habits'; return; }
-          if (trimmed.includes('週間排程')) { currentSection = 'tasks'; return; }
+        if (trimmed.includes('本週核心目標')) { currentSection = 'goal'; return; }
+        if (trimmed.includes('習慣追蹤器')) { currentSection = 'habits'; return; }
+        if (trimmed.includes('週間排程')) { currentSection = 'tasks'; return; }
 
-          if (currentSection === 'goal') {
-            if (trimmed !== '未設定' && !trimmed.startsWith('#')) newGoal += trimmed + ' ';
-          } else if (currentSection === 'habits') {
-            if (trimmed.includes('[') && trimmed.includes(']')) {
-              const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
-              const hText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
-              if (hText) newHabits.push({ text: hText, done: isDone });
-            }
-          } else if (currentSection === 'tasks') {
-            if (trimmed.includes('Mon') || trimmed.includes('月曜')) currentDay = 'Mon';
-            else if (trimmed.includes('Tue') || trimmed.includes('火曜')) currentDay = 'Tue';
-            else if (trimmed.includes('Wed') || trimmed.includes('水曜')) currentDay = 'Wed';
-            else if (trimmed.includes('Thu') || trimmed.includes('木曜')) currentDay = 'Thu';
-            else if (trimmed.includes('Fri') || trimmed.includes('金曜')) currentDay = 'Fri';
-            else if (trimmed.includes('Sat') || trimmed.includes('土曜')) currentDay = 'Sat';
-            else if (trimmed.includes('Sun') || trimmed.includes('日曜')) currentDay = 'Sun';
+        if (currentSection === 'goal') {
+          if (trimmed !== '未設定' && !trimmed.startsWith('#')) newGoal += trimmed + ' ';
+        } else if (currentSection === 'habits') {
+          if (trimmed.includes('[') && trimmed.includes(']')) {
+            const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+            const hText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+            if (hText) newHabits.push({ text: hText, done: isDone });
+          }
+        } else if (currentSection === 'tasks') {
+          if (trimmed.includes('Mon') || trimmed.includes('月曜')) currentDay = 'Mon';
+          else if (trimmed.includes('Tue') || trimmed.includes('火曜')) currentDay = 'Tue';
+          else if (trimmed.includes('Wed') || trimmed.includes('水曜')) currentDay = 'Wed';
+          else if (trimmed.includes('Thu') || trimmed.includes('木曜')) currentDay = 'Thu';
+          else if (trimmed.includes('Fri') || trimmed.includes('金曜')) currentDay = 'Fri';
+          else if (trimmed.includes('Sat') || trimmed.includes('土曜')) currentDay = 'Sat';
+          else if (trimmed.includes('Sun') || trimmed.includes('日曜')) currentDay = 'Sun';
 
-            if (trimmed.includes('上午')) currentTime = 'morning';
-            else if (trimmed.includes('下午')) currentTime = 'afternoon';
-            else if (trimmed.includes('晚上')) currentTime = 'night';
+          if (trimmed.includes('上午')) currentTime = 'morning';
+          else if (trimmed.includes('下午')) currentTime = 'afternoon';
+          else if (trimmed.includes('晚上')) currentTime = 'night';
 
-            if (trimmed.includes('[') && trimmed.includes(']')) {
-              const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
-              const tText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
-              if (tText && currentDay) {
-                newTasks.push({ text: tText, day: currentDay, time: currentTime, done: isDone });
-              }
+          if (trimmed.includes('[') && trimmed.includes(']')) {
+            const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+            const tText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+            if (tText && currentDay) {
+              newTasks.push({ text: tText, day: currentDay, time: currentTime, done: isDone });
             }
           }
-        });
+        }
+      });
 
-        store.goal = newGoal.trim();
-        store.habits = newHabits;
-        store.tasks = newTasks;
-        
-        init();
-        saveData();
-        alert('🎉 成功！您的計畫（包含陪媽媽做復健、心經等）已完全還原！');
-      } catch (err) {
-        alert('解析失敗，請再試一次。');
-      }
+      store.goal = newGoal.trim();
+      store.habits = newHabits;
+      store.tasks = newTasks;
+      
+      init();
+      saveData();
+      document.getElementById('importInput').value = ''; // 清空輸入框
+      alert('🎉 成功！「陪媽媽去做復健」與三個習慣已經全部還原回來了！');
     }
 
     function resetTemplate() {
