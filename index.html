@@ -70,25 +70,24 @@
 </head>
 <body>
 
-  <!-- 1. 最上面：工具列 (儲存、匯出、重置) -->
+  <!-- 1. 最上面：工具列 (新增匯入功能) -->
   <header>
     <h1>週間計畫表</h1>
     <div class="toolbar">
       <button class="btn btn-primary" onclick="saveData(true)">💾 儲存計畫</button>
       <button class="btn" onclick="exportMarkdown()">📝 匯出 Markdown</button>
+      <button class="btn" onclick="importMarkdownPrompt()">📥 貼上/匯入 Markdown</button>
       <button class="btn btn-danger" onclick="resetTemplate()">🔄 重置範本</button>
     </div>
   </header>
 
   <!-- 2. 中間：核心目標 & 核心習慣追蹤器 -->
   <div class="dashboard">
-    <!-- 本週核心目標 -->
     <div class="dash-card">
       <h2>🎯 本週核心目標</h2>
       <textarea id="weeklyGoal" style="width:100%; height:80px; border:1px solid var(--accent-border); padding:0.5rem; border-radius:4px; resize:none; outline:none; background:#faf8f5;" placeholder="寫下本週最重要突破的 1~2 件大事..."></textarea>
     </div>
 
-    <!-- 核心習慣追蹤器 (自動計算完成率) -->
     <div class="dash-card">
       <h2>
         <span>🌱 習慣追蹤器</span>
@@ -127,7 +126,6 @@
   <div class="planner-grid" id="plannerGrid"></div>
 
   <script>
-    // --- 資料結構初始化 ---
     const days = [
       { id: 'Mon', title: '月曜日 Mon' }, { id: 'Tue', title: '火曜日 Tue' },
       { id: 'Wed', title: '水曜日 Wed' }, { id: 'Thu', title: '木曜日 Thu' },
@@ -144,7 +142,6 @@
       tasks: []
     };
 
-    // --- 頁面初始化 ---
     function init() {
       document.getElementById('weeklyGoal').value = store.goal || '';
       document.getElementById('weeklyGoal').addEventListener('input', (e) => { store.goal = e.target.value; saveData(); });
@@ -152,7 +149,6 @@
       renderGrid();
     }
 
-    // --- 習慣追蹤器邏輯 ---
     function addHabit() {
       const input = document.getElementById('habitInput');
       if (!input.value.trim()) return;
@@ -162,17 +158,8 @@
       saveData();
     }
 
-    function toggleHabit(idx) {
-      store.habits[idx].done = !store.habits[idx].done;
-      renderHabits();
-      saveData();
-    }
-
-    function deleteHabit(idx) {
-      store.habits.splice(idx, 1);
-      renderHabits();
-      saveData();
-    }
+    function toggleHabit(idx) { store.habits[idx].done = !store.habits[idx].done; renderHabits(); saveData(); }
+    function deleteHabit(idx) { store.habits.splice(idx, 1); renderHabits(); saveData(); }
 
     function renderHabits() {
       const list = document.getElementById('habitList');
@@ -193,7 +180,6 @@
       document.getElementById('progressBar').style.width = percent + '%';
     }
 
-    // --- 分時段任務區域渲染 ---
     function renderGrid() {
       const grid = document.getElementById('plannerGrid');
       grid.innerHTML = '';
@@ -246,13 +232,11 @@
     function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
     function deleteTask(i) { store.tasks.splice(i, 1); renderGrid(); saveData(); }
 
-    // --- 最上面 3 大按鈕功能 ---
     function saveData(showAlert = false) {
       localStorage.setItem('pro_weekly_data', JSON.stringify(store));
       if (showAlert) alert('✅ 計畫已成功儲存至 LocalStorage！');
     }
 
-    // 匯出 Markdown 檔案
     function exportMarkdown() {
       let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
       md += `## 🌱 習慣追蹤器\n`;
@@ -278,7 +262,72 @@
       a.click();
     }
 
-    // 重置範本
+    // --- 新增：解析並貼回/匯入 Markdown 的核心邏輯 ---
+    function importMarkdownPrompt() {
+      const text = prompt("請貼上您的 Markdown 文字，或點擊確定繼續：");
+      if (text) {
+        parseAndLoadMarkdown(text);
+      }
+    }
+
+    function parseAndLoadMarkdown(mdText) {
+      try {
+        let newGoal = '';
+        let newHabits = [];
+        let newTasks = [];
+
+        const lines = mdText.split('\n');
+        let currentSection = '';
+        let currentDay = '';
+        let currentTime = '';
+
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('# 📝 本週核心目標')) { currentSection = 'goal'; return; }
+          if (trimmed.startsWith('## 🌱 習慣追蹤器')) { currentSection = 'habits'; return; }
+          if (trimmed.startsWith('## 📅 週間排程')) { currentSection = 'tasks'; return; }
+
+          if (currentSection === 'goal' && trimmed && !trimmed.startsWith('#')) {
+            if (trimmed !== '未設定') newGoal += trimmed + '\n';
+          } else if (currentSection === 'habits' && trimmed.startsWith('- [')) {
+            const isDone = trimmed.includes('- [x]');
+            const hText = trimmed.replace(/- \[[ x]\]/, '').trim();
+            if (hText) newHabits.push({ text: hText, done: isDone });
+          } else if (currentSection === 'tasks') {
+            if (trimmed.startsWith('### ')) {
+              if (trimmed.includes('Mon')) currentDay = 'Mon';
+              else if (trimmed.includes('Tue')) currentDay = 'Tue';
+              else if (trimmed.includes('Wed')) currentDay = 'Wed';
+              else if (trimmed.includes('Thu')) currentDay = 'Thu';
+              else if (trimmed.includes('Fri')) currentDay = 'Fri';
+              else if (trimmed.includes('Sat')) currentDay = 'Sat';
+              else if (trimmed.includes('Sun')) currentDay = 'Sun';
+            } else if (trimmed.startsWith('#### ')) {
+              if (trimmed.includes('上午')) currentTime = 'morning';
+              else if (trimmed.includes('下午')) currentTime = 'afternoon';
+              else if (trimmed.includes('晚上')) currentTime = 'night';
+            } else if (trimmed.startsWith('- [')) {
+              const isDone = trimmed.includes('- [x]');
+              const tText = trimmed.replace(/- \[[ x]\]/, '').trim();
+              if (tText && currentDay && currentTime) {
+                newTasks.push({ text: tText, day: currentDay, time: currentTime, done: isDone });
+              }
+            }
+          }
+        });
+
+        store.goal = newGoal.trim();
+        store.habits = newHabits;
+        store.tasks = newTasks;
+        
+        init();
+        saveData();
+        alert('🎉 Markdown 資料已成功貼回並更新網頁！');
+      } catch (err) {
+        alert('解析失敗，請確認 Markdown 格式是否正確。');
+      }
+    }
+
     function resetTemplate() {
       if (confirm('確定要清空並重置所有內容嗎？')) {
         localStorage.removeItem('pro_weekly_data');
