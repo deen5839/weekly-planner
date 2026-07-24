@@ -24,7 +24,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Serif TC', serif; }
     body { background-color: var(--bg-color); color: var(--text-main); padding: 1.5rem; min-height: 100vh; }
     
-    /* 頂部導航與功能按鈕區 */
     header { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; margin: 0 auto 1.5rem auto; flex-wrap: wrap; gap: 10px; }
     header h1 { font-size: 1.6rem; letter-spacing: 2px; }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -35,31 +34,25 @@
     .btn-danger { color: #b85c5c; border-color: #e8d3d8; }
     .btn-danger:hover { background: #fdf5f5; }
 
-    /* 中間區域：核心目標 & 習慣追蹤器 */
     .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto 1.5rem auto; }
     .dash-card { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: var(--shadow); }
     .dash-card h2 { font-size: 1.1rem; margin-bottom: 0.8rem; border-bottom: 2px solid var(--accent-border); padding-bottom: 0.3rem; display: flex; justify-content: space-between; align-items: center; }
     
-    /* 習慣進度條 */
     .progress-bar-bg { width: 100%; height: 8px; background: #efece6; border-radius: 4px; overflow: hidden; margin-top: 5px; }
     .progress-bar-fill { height: 100%; background: var(--accent-matcha); width: 0%; transition: width 0.3s ease; }
 
-    /* 新增任務工具列 */
     .controls { background: var(--card-bg); padding: 1rem; border-radius: var(--border-radius); border: 1px solid var(--accent-border); max-width: 1300px; margin: 0 auto 1.5rem auto; display: flex; gap: 8px; flex-wrap: wrap; }
     .controls input, .controls select { padding: 0.5rem; border: 1px solid var(--accent-border); border-radius: 4px; outline: none; background: #faf8f5; }
     .controls input[type="text"] { flex: 2; min-width: 180px; }
 
-    /* 七天卡片 & 時段區域 */
     .planner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto; }
     .day-card { background: var(--card-bg); border-radius: var(--border-radius); border: 1px solid var(--accent-border); box-shadow: var(--shadow); display: flex; flex-direction: column; }
     .day-header { background: #f2eee9; padding: 0.6rem; text-align: center; border-bottom: 1px solid var(--accent-border); }
     
-    /* 時段分區 (早/午/晚) */
     .time-block { padding: 0.6rem; border-bottom: 1px dashed var(--accent-border); }
     .time-block:last-child { border-bottom: none; }
     .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 4px; }
     
-    /* 任務清單 */
     .task-list { list-style: none; }
     .task-item { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; font-size: 0.88rem; }
     .task-content { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
@@ -70,7 +63,6 @@
 </head>
 <body>
 
-  <!-- 1. 最上面：工具列 (新增匯入功能) -->
   <header>
     <h1>週間計畫表</h1>
     <div class="toolbar">
@@ -81,7 +73,6 @@
     </div>
   </header>
 
-  <!-- 2. 中間：核心目標 & 核心習慣追蹤器 -->
   <div class="dashboard">
     <div class="dash-card">
       <h2>🎯 本週核心目標</h2>
@@ -102,7 +93,6 @@
     </div>
   </div>
 
-  <!-- 3. 新增任務輸入區 -->
   <div class="controls">
     <input type="text" id="taskInput" placeholder="寫下具體任務內容...">
     <select id="daySelect">
@@ -122,7 +112,6 @@
     <button class="btn btn-primary" onclick="addTask()">新增排程</button>
   </div>
 
-  <!-- 4. 最下面：分時段 7 天計畫區域 -->
   <div class="planner-grid" id="plannerGrid"></div>
 
   <script>
@@ -135,10 +124,7 @@
 
     let store = JSON.parse(localStorage.getItem('pro_weekly_data')) || {
       goal: '',
-      habits: [
-        { text: '每日背靠好坐直', done: false },
-        { text: '小口潤潤溫水', done: false }
-      ],
+      habits: [],
       tasks: []
     };
 
@@ -262,14 +248,14 @@
       a.click();
     }
 
-    // --- 新增：解析並貼回/匯入 Markdown 的核心邏輯 ---
     function importMarkdownPrompt() {
-      const text = prompt("請貼上您的 Markdown 文字，或點擊確定繼續：");
+      const text = prompt("請貼上您的 Markdown 文字：");
       if (text) {
         parseAndLoadMarkdown(text);
       }
     }
 
+    // --- 強化版解析邏輯 (相容各種格式) ---
     function parseAndLoadMarkdown(mdText) {
       try {
         let newGoal = '';
@@ -279,37 +265,41 @@
         const lines = mdText.split('\n');
         let currentSection = '';
         let currentDay = '';
-        let currentTime = '';
+        let currentTime = 'morning';
 
         lines.forEach(line => {
           const trimmed = line.trim();
-          if (trimmed.startsWith('# 📝 本週核心目標')) { currentSection = 'goal'; return; }
-          if (trimmed.startsWith('## 🌱 習慣追蹤器')) { currentSection = 'habits'; return; }
-          if (trimmed.startsWith('## 📅 週間排程')) { currentSection = 'tasks'; return; }
+          if (!trimmed) return;
 
-          if (currentSection === 'goal' && trimmed && !trimmed.startsWith('#')) {
-            if (trimmed !== '未設定') newGoal += trimmed + '\n';
-          } else if (currentSection === 'habits' && trimmed.startsWith('- [')) {
-            const isDone = trimmed.includes('- [x]');
-            const hText = trimmed.replace(/- \[[ x]\]/, '').trim();
-            if (hText) newHabits.push({ text: hText, done: isDone });
+          if (trimmed.includes('本週核心目標')) { currentSection = 'goal'; return; }
+          if (trimmed.includes('習慣追蹤器')) { currentSection = 'habits'; return; }
+          if (trimmed.includes('週間排程')) { currentSection = 'tasks'; return; }
+
+          if (currentSection === 'goal') {
+            if (trimmed !== '未設定' && !trimmed.startsWith('#')) newGoal += trimmed + ' ';
+          } else if (currentSection === 'habits') {
+            if (trimmed.includes('[') && trimmed.includes(']')) {
+              const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+              const hText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+              if (hText) newHabits.push({ text: hText, done: isDone });
+            }
           } else if (currentSection === 'tasks') {
-            if (trimmed.startsWith('### ')) {
-              if (trimmed.includes('Mon')) currentDay = 'Mon';
-              else if (trimmed.includes('Tue')) currentDay = 'Tue';
-              else if (trimmed.includes('Wed')) currentDay = 'Wed';
-              else if (trimmed.includes('Thu')) currentDay = 'Thu';
-              else if (trimmed.includes('Fri')) currentDay = 'Fri';
-              else if (trimmed.includes('Sat')) currentDay = 'Sat';
-              else if (trimmed.includes('Sun')) currentDay = 'Sun';
-            } else if (trimmed.startsWith('#### ')) {
-              if (trimmed.includes('上午')) currentTime = 'morning';
-              else if (trimmed.includes('下午')) currentTime = 'afternoon';
-              else if (trimmed.includes('晚上')) currentTime = 'night';
-            } else if (trimmed.startsWith('- [')) {
-              const isDone = trimmed.includes('- [x]');
-              const tText = trimmed.replace(/- \[[ x]\]/, '').trim();
-              if (tText && currentDay && currentTime) {
+            if (trimmed.includes('Mon') || trimmed.includes('月曜')) currentDay = 'Mon';
+            else if (trimmed.includes('Tue') || trimmed.includes('火曜')) currentDay = 'Tue';
+            else if (trimmed.includes('Wed') || trimmed.includes('水曜')) currentDay = 'Wed';
+            else if (trimmed.includes('Thu') || trimmed.includes('木曜')) currentDay = 'Thu';
+            else if (trimmed.includes('Fri') || trimmed.includes('金曜')) currentDay = 'Fri';
+            else if (trimmed.includes('Sat') || trimmed.includes('土曜')) currentDay = 'Sat';
+            else if (trimmed.includes('Sun') || trimmed.includes('日曜')) currentDay = 'Sun';
+
+            if (trimmed.includes('上午')) currentTime = 'morning';
+            else if (trimmed.includes('下午')) currentTime = 'afternoon';
+            else if (trimmed.includes('晚上')) currentTime = 'night';
+
+            if (trimmed.includes('[') && trimmed.includes(']')) {
+              const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+              const tText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+              if (tText && currentDay) {
                 newTasks.push({ text: tText, day: currentDay, time: currentTime, done: isDone });
               }
             }
@@ -322,9 +312,9 @@
         
         init();
         saveData();
-        alert('🎉 Markdown 資料已成功貼回並更新網頁！');
+        alert('🎉 成功！您的計畫（包含陪媽媽做復健、心經等）已完全還原！');
       } catch (err) {
-        alert('解析失敗，請確認 Markdown 格式是否正確。');
+        alert('解析失敗，請再試一次。');
       }
     }
 
