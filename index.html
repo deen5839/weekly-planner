@@ -39,12 +39,14 @@
       color: #556b52;
       border: 1px solid #d2ded0;
       border-radius: 4px;
-      padding: 2px 6px;
+      padding: 3px 7px;
       font-size: 0.75rem;
       cursor: pointer;
       transition: all 0.2s;
-      margin-left: 6px;
-      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
     }
     .btn-icon-cal:hover {
       background: var(--accent-matcha);
@@ -76,11 +78,40 @@
     .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; }
     
     .task-list { list-style: none; }
-    .task-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; font-size: 0.88rem; border-bottom: 1px dotted #eae5dd; }
+    
+    /* 任務項目防遮擋橫向排版 */
+    .task-item { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 0.5rem 0; 
+      font-size: 0.88rem; 
+      border-bottom: 1px dotted #eae5dd; 
+      gap: 8px;
+    }
     .task-item:last-child { border-bottom: none; }
-    .task-content { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    
+    .task-content { 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      cursor: pointer; 
+      flex: 1; 
+      min-width: 0; /* 確保長文字會截斷，不撐爆版面 */
+    }
+    .task-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .completed { text-decoration: line-through; color: var(--text-muted); }
-    .task-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    
+    .task-actions { 
+      display: flex; 
+      align-items: center; 
+      gap: 4px; 
+      flex-shrink: 0; 
+    }
     .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 0 4px; }
     .del-btn:hover { color: #b85c5c; }
   </style>
@@ -143,7 +174,7 @@
   <div class="planner-grid" id="plannerGrid"></div>
 
   <script>
-    // 還原為純中文標題
+    // 星期完全採用繁體中文
     const days = [
       { id: 'Mon', title: '星期一' }, { id: 'Tue', title: '星期二' },
       { id: 'Wed', title: '星期三' }, { id: 'Thu', title: '星期四' },
@@ -219,7 +250,8 @@
             <li class="task-item">
               <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${realIndex})">
                 <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${realIndex})">
-                <strong style="margin-right:4px;">${t.time}</strong> ${t.text}
+                <strong style="margin-right:4px;">${t.time}</strong> 
+                <span class="task-text">${t.text}</span>
               </span>
               <div class="task-actions">
                 <button class="btn-icon-cal" title="加入手機行事曆" onclick="event.stopPropagation(); downloadTaskICS(${realIndex})">📅 加行事曆</button>
