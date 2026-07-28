@@ -33,20 +33,18 @@
     .btn-primary:hover { background: #74876f; }
     .btn-danger { color: #b85c5c; border-color: #e8d3d8; }
 
-    /* 精緻行事曆圖示按鈕 */
+    /* 精緻行事曆標籤按鈕 */
     .btn-icon-cal {
-      background: #f0f4ef;
-      color: #556b52;
-      border: 1px solid #d2ded0;
+      background: #faf8f5;
+      color: #74876f;
+      border: 1px solid #dcd7ce;
       border-radius: 4px;
-      padding: 3px 7px;
-      font-size: 0.75rem;
+      padding: 2px 6px;
+      font-size: 0.72rem;
       cursor: pointer;
       transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
       white-space: nowrap;
+      margin-left: 4px;
     }
     .btn-icon-cal:hover {
       background: var(--accent-matcha);
@@ -75,44 +73,45 @@
     
     .time-block { padding: 0.6rem; border-bottom: 1px dashed var(--accent-border); }
     .time-block:last-child { border-bottom: none; }
-    .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; }
+    .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 4px; }
     
     .task-list { list-style: none; }
     
-    /* 任務項目防遮擋橫向排版 */
+    /* 防擋字的清晰任務列 */
     .task-item { 
       display: flex; 
-      align-items: center; 
+      align-items: flex-start; 
       justify-content: space-between; 
-      padding: 0.5rem 0; 
+      padding: 0.35rem 0; 
       font-size: 0.88rem; 
-      border-bottom: 1px dotted #eae5dd; 
-      gap: 8px;
+      border-bottom: 1px dotted #eae5dd;
+      gap: 6px;
     }
     .task-item:last-child { border-bottom: none; }
     
     .task-content { 
       display: flex; 
-      align-items: center; 
+      align-items: flex-start; 
       gap: 6px; 
       cursor: pointer; 
       flex: 1; 
-      min-width: 0; /* 確保長文字會截斷，不撐爆版面 */
+      line-height: 1.4;
+      word-break: break-word; /* 避免長字撐爆 */
     }
-    .task-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .task-content input[type="checkbox"] {
+      margin-top: 3px;
+      flex-shrink: 0;
     }
     .completed { text-decoration: line-through; color: var(--text-muted); }
     
     .task-actions { 
       display: flex; 
       align-items: center; 
-      gap: 4px; 
+      gap: 2px; 
       flex-shrink: 0; 
+      margin-top: 1px;
     }
-    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 0 4px; }
+    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 0 3px; }
     .del-btn:hover { color: #b85c5c; }
   </style>
 </head>
@@ -166,7 +165,11 @@
       <option value="Sat">星期六</option>
       <option value="Sun">星期日</option>
     </select>
-    <input type="time" id="timeSelect" value="09:00">
+    <select id="periodSelect">
+      <option value="09:00">🌅 上午 (09:00)</option>
+      <option value="14:00">☀️ 下午 (14:00)</option>
+      <option value="19:00">🌙 晚上 (19:00)</option>
+    </select>
     <button class="btn btn-primary" onclick="addTask()">新增排程</button>
     <button class="btn" onclick="addTask(true)">新增並同步至手機</button>
   </div>
@@ -174,12 +177,17 @@
   <div class="planner-grid" id="plannerGrid"></div>
 
   <script>
-    // 星期完全採用繁體中文
     const days = [
       { id: 'Mon', title: '星期一' }, { id: 'Tue', title: '星期二' },
       { id: 'Wed', title: '星期三' }, { id: 'Thu', title: '星期四' },
       { id: 'Fri', title: '星期五' }, { id: 'Sat', title: '星期六' },
       { id: 'Sun', title: '星期日' }
+    ];
+
+    const timeSlots = [
+      { key: 'morning', title: '🌅 上午', defaultTime: '09:00' },
+      { key: 'afternoon', title: '☀️ 下午', defaultTime: '14:00' },
+      { key: 'night', title: '🌙 晚上', defaultTime: '19:00' }
     ];
 
     let store = JSON.parse(localStorage.getItem('pro_weekly_data')) || {
@@ -226,6 +234,15 @@
       document.getElementById('progressBar').style.width = percent + '%';
     }
 
+    // 歸類任務至 上午/下午/晚上
+    function getTaskSlot(timeStr) {
+      if (!timeStr) return 'morning';
+      const hour = parseInt(timeStr.split(':')[0], 10);
+      if (hour < 12) return 'morning';
+      if (hour < 18) return 'afternoon';
+      return 'night';
+    }
+
     function renderGrid() {
       const grid = document.getElementById('plannerGrid');
       grid.innerHTML = '';
@@ -235,23 +252,31 @@
           <div class="day-card">
             <div class="day-header"><h3>${d.title}</h3></div>
             <div class="time-block">
-              <div class="time-title">📌 排程</div>
-              <ul class="task-list" id="${d.id}-tasks"></ul>
+              <div class="time-title">🌅 上午</div>
+              <ul class="task-list" id="${d.id}-morning-tasks"></ul>
+            </div>
+            <div class="time-block">
+              <div class="time-title">☀️ 下午</div>
+              <ul class="task-list" id="${d.id}-afternoon-tasks"></ul>
+            </div>
+            <div class="time-block">
+              <div class="time-title">🌙 晚上</div>
+              <ul class="task-list" id="${d.id}-night-tasks"></ul>
             </div>
           </div>`;
       });
 
       const sortedTasks = [...store.tasks].sort((a, b) => a.time.localeCompare(b.time));
       sortedTasks.forEach((t) => {
-        const listEl = document.getElementById(`${t.day}-tasks`);
+        const slot = getTaskSlot(t.time);
+        const listEl = document.getElementById(`${t.day}-${slot}-tasks`);
         const realIndex = store.tasks.indexOf(t);
         if (listEl) {
           listEl.innerHTML += `
             <li class="task-item">
               <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${realIndex})">
                 <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${realIndex})">
-                <strong style="margin-right:4px;">${t.time}</strong> 
-                <span class="task-text">${t.text}</span>
+                <span>${t.text}</span>
               </span>
               <div class="task-actions">
                 <button class="btn-icon-cal" title="加入手機行事曆" onclick="event.stopPropagation(); downloadTaskICS(${realIndex})">📅 加行事曆</button>
@@ -265,8 +290,8 @@
     function addTask(downloadCalendar = false) {
       const text = document.getElementById('taskInput').value.trim();
       const day = document.getElementById('daySelect').value;
-      const time = document.getElementById('timeSelect').value;
-      if (!text || !time) return;
+      const time = document.getElementById('periodSelect').value;
+      if (!text) return;
       const task = { text, day, time, done: false };
       store.tasks.push(task);
       document.getElementById('taskInput').value = '';
@@ -296,7 +321,7 @@
           .filter(t => t.day === d.id)
           .sort((a, b) => a.time.localeCompare(b.time));
         dayTasks.forEach(t => {
-          md += `- [${t.done ? 'x' : ' '}] ${t.time} ${t.text}\n`;
+          md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`;
         });
         md += `\n`;
       });
