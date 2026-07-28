@@ -27,15 +27,33 @@
     header { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; margin: 0 auto 1rem auto; flex-wrap: wrap; gap: 10px; }
     header h1 { font-size: 1.6rem; letter-spacing: 2px; }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn { padding: 0.5rem 1rem; border: 1px solid var(--accent-border); border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+    .btn { padding: 0.5rem 1rem; border: 1px solid var(--accent-border); border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
     .btn:hover { background: #efece6; }
     .btn-primary { background: var(--accent-matcha); color: white; border: none; }
     .btn-primary:hover { background: #74876f; }
     .btn-danger { color: #b85c5c; border-color: #e8d3d8; }
 
-    /* 貼上匯入專用區塊 */
+    /* 精緻行事曆圖示按鈕 */
+    .btn-icon-cal {
+      background: #f0f4ef;
+      color: #556b52;
+      border: 1px solid #d2ded0;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-left: 6px;
+      flex-shrink: 0;
+    }
+    .btn-icon-cal:hover {
+      background: var(--accent-matcha);
+      color: white;
+      border-color: var(--accent-matcha);
+    }
+
     .import-box { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1rem; max-width: 1300px; margin: 0 auto 1.5rem auto; box-shadow: var(--shadow); }
-    .import-box textarea { width: 100%; height: 100px; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.5rem; background: #faf8f5; font-size: 0.85rem; resize: vertical; outline: none; }
+    .import-box textarea { width: 100%; height: 90px; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.5rem; background: #faf8f5; font-size: 0.85rem; resize: vertical; outline: none; }
 
     .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto 1.5rem auto; }
     .dash-card { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: var(--shadow); }
@@ -44,23 +62,26 @@
     .progress-bar-bg { width: 100%; height: 8px; background: #efece6; border-radius: 4px; overflow: hidden; margin-top: 5px; }
     .progress-bar-fill { height: 100%; background: var(--accent-matcha); width: 0%; transition: width 0.3s ease; }
 
-    .controls { background: var(--card-bg); padding: 1rem; border-radius: var(--border-radius); border: 1px solid var(--accent-border); max-width: 1300px; margin: 0 auto 1.5rem auto; display: flex; gap: 8px; flex-wrap: wrap; }
+    .controls { background: var(--card-bg); padding: 1rem; border-radius: var(--border-radius); border: 1px solid var(--accent-border); max-width: 1300px; margin: 0 auto 1.5rem auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .controls input, .controls select { padding: 0.5rem; border: 1px solid var(--accent-border); border-radius: 4px; outline: none; background: #faf8f5; }
     .controls input[type="text"] { flex: 2; min-width: 180px; }
 
     .planner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto; }
     .day-card { background: var(--card-bg); border-radius: var(--border-radius); border: 1px solid var(--accent-border); box-shadow: var(--shadow); display: flex; flex-direction: column; }
     .day-header { background: #f2eee9; padding: 0.6rem; text-align: center; border-bottom: 1px solid var(--accent-border); }
+    .day-header h3 { font-size: 1rem; color: var(--text-main); font-weight: 600; }
     
     .time-block { padding: 0.6rem; border-bottom: 1px dashed var(--accent-border); }
     .time-block:last-child { border-bottom: none; }
     .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; }
     
     .task-list { list-style: none; }
-    .task-item { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; font-size: 0.88rem; }
-    .task-content { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+    .task-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; font-size: 0.88rem; border-bottom: 1px dotted #eae5dd; }
+    .task-item:last-child { border-bottom: none; }
+    .task-content { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .completed { text-decoration: line-through; color: var(--text-muted); }
-    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.8rem; }
+    .task-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 0 4px; }
     .del-btn:hover { color: #b85c5c; }
   </style>
 </head>
@@ -75,7 +96,6 @@
     </div>
   </header>
 
-  <!-- 直接顯示在網頁上的貼上文字盒 -->
   <div class="import-box">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
       <span style="font-size:0.9rem; font-weight:600;">📥 貼上 Markdown 文字還原計畫：</span>
@@ -107,30 +127,28 @@
   <div class="controls">
     <input type="text" id="taskInput" placeholder="寫下具體任務內容...">
     <select id="daySelect">
-      <option value="Mon">星期一 (Mon)</option>
-      <option value="Tue">星期二 (Tue)</option>
-      <option value="Wed">星期三 (Wed)</option>
-      <option value="Thu">星期四 (Thu)</option>
-      <option value="Fri">星期五 (Fri)</option>
-      <option value="Sat">星期六 (Sat)</option>
-      <option value="Sun">星期日 (Sun)</option>
+      <option value="Mon">星期一</option>
+      <option value="Tue">星期二</option>
+      <option value="Wed">星期三</option>
+      <option value="Thu">星期四</option>
+      <option value="Fri">星期五</option>
+      <option value="Sat">星期六</option>
+      <option value="Sun">星期日</option>
     </select>
-    <select id="timeSelect">
-      <option value="morning">🌅 上午 (Morning)</option>
-      <option value="afternoon">☀️ 下午 (Afternoon)</option>
-      <option value="night">🌙 晚上 (Night)</option>
-    </select>
+    <input type="time" id="timeSelect" value="09:00">
     <button class="btn btn-primary" onclick="addTask()">新增排程</button>
+    <button class="btn" onclick="addTask(true)">新增並同步至手機</button>
   </div>
 
   <div class="planner-grid" id="plannerGrid"></div>
 
   <script>
+    // 還原為純中文標題
     const days = [
-      { id: 'Mon', title: '月曜日 Mon' }, { id: 'Tue', title: '火曜日 Tue' },
-      { id: 'Wed', title: '水曜日 Wed' }, { id: 'Thu', title: '木曜日 Thu' },
-      { id: 'Fri', title: '金曜日 Fri' }, { id: 'Sat', title: '土曜日 Sat' },
-      { id: 'Sun', title: '日曜日 Sun' }
+      { id: 'Mon', title: '星期一' }, { id: 'Tue', title: '星期二' },
+      { id: 'Wed', title: '星期三' }, { id: 'Thu', title: '星期四' },
+      { id: 'Fri', title: '星期五' }, { id: 'Sat', title: '星期六' },
+      { id: 'Sun', title: '星期日' }
     ];
 
     let store = JSON.parse(localStorage.getItem('pro_weekly_data')) || {
@@ -186,44 +204,45 @@
           <div class="day-card">
             <div class="day-header"><h3>${d.title}</h3></div>
             <div class="time-block">
-              <div class="time-title">🌅 上午</div>
-              <ul class="task-list" id="${d.id}-morning"></ul>
-            </div>
-            <div class="time-block">
-              <div class="time-title">☀️ 下午</div>
-              <ul class="task-list" id="${d.id}-afternoon"></ul>
-            </div>
-            <div class="time-block">
-              <div class="time-title">🌙 晚上</div>
-              <ul class="task-list" id="${d.id}-night"></ul>
+              <div class="time-title">📌 排程</div>
+              <ul class="task-list" id="${d.id}-tasks"></ul>
             </div>
           </div>`;
       });
 
-      store.tasks.forEach((t, i) => {
-        const listEl = document.getElementById(`${t.day}-${t.time}`);
+      const sortedTasks = [...store.tasks].sort((a, b) => a.time.localeCompare(b.time));
+      sortedTasks.forEach((t) => {
+        const listEl = document.getElementById(`${t.day}-tasks`);
+        const realIndex = store.tasks.indexOf(t);
         if (listEl) {
           listEl.innerHTML += `
             <li class="task-item">
-              <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${i})">
-                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${i})">
-                ${t.text}
+              <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${realIndex})">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${realIndex})">
+                <strong style="margin-right:4px;">${t.time}</strong> ${t.text}
               </span>
-              <button class="del-btn" onclick="deleteTask(${i})">✕</button>
+              <div class="task-actions">
+                <button class="btn-icon-cal" title="加入手機行事曆" onclick="event.stopPropagation(); downloadTaskICS(${realIndex})">📅 加行事曆</button>
+                <button class="del-btn" onclick="deleteTask(${realIndex})">✕</button>
+              </div>
             </li>`;
         }
       });
     }
 
-    function addTask() {
+    function addTask(downloadCalendar = false) {
       const text = document.getElementById('taskInput').value.trim();
       const day = document.getElementById('daySelect').value;
       const time = document.getElementById('timeSelect').value;
-      if (!text) return;
-      store.tasks.push({ text, day, time, done: false });
+      if (!text || !time) return;
+      const task = { text, day, time, done: false };
+      store.tasks.push(task);
       document.getElementById('taskInput').value = '';
       renderGrid();
       saveData();
+      if (downloadCalendar) {
+        downloadICSForTask(task);
+      }
     }
 
     function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
@@ -241,13 +260,11 @@
       md += `\n## 📅 週間排程\n`;
       days.forEach(d => {
         md += `### ${d.title}\n`;
-        ['morning', 'afternoon', 'night'].forEach(time => {
-          const timeName = time === 'morning' ? '🌅 上午' : time === 'afternoon' ? '☀️ 下午' : '🌙 晚上';
-          const timeTasks = store.tasks.filter(t => t.day === d.id && t.time === time);
-          if (timeTasks.length > 0) {
-            md += `#### ${timeName}\n`;
-            timeTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
-          }
+        const dayTasks = store.tasks
+          .filter(t => t.day === d.id)
+          .sort((a, b) => a.time.localeCompare(b.time));
+        dayTasks.forEach(t => {
+          md += `- [${t.done ? 'x' : ' '}] ${t.time} ${t.text}\n`;
         });
         md += `\n`;
       });
@@ -259,11 +276,81 @@
       a.click();
     }
 
-    // --- 從輸入框讀取並解析 ---
+    function getTaskDate(dayId) {
+      const today = new Date();
+      const offsetMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+      const dayIndex = today.getDay();
+      const mondayOffset = (dayIndex + 6) % 7;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - mondayOffset);
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offsetMap[dayId]);
+      return date;
+    }
+
+    function getTaskDateTime(task) {
+      const date = getTaskDate(task.day);
+      const [hour, minute] = task.time.split(':').map(Number);
+      date.setHours(isNaN(hour) ? 9 : hour, isNaN(minute) ? 0 : minute, 0, 0);
+      return date;
+    }
+
+    function formatICSDate(date) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    }
+
+    function createICSContent(task) {
+      const eventStart = getTaskDateTime(task);
+      const eventEnd = new Date(eventStart);
+      eventEnd.setHours(eventEnd.getHours() + 1);
+      const dtstamp = formatICSDate(new Date());
+      const uid = `weekly-planner-${task.day}-${task.time}-${Date.now()}`;
+      return `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtstamp}
+SUMMARY:${task.text}
+DTSTART:${formatICSDate(eventStart)}
+DTEND:${formatICSDate(eventEnd)}
+DESCRIPTION:Weekly Planner 任務: ${task.text}
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:提醒：${task.text}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+    }
+
+    function downloadICS(filename, content) {
+      const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function downloadICSForTask(task) {
+      const content = createICSContent(task);
+      const safeTime = task.time.replace(':', '-');
+      const filename = `WeeklyPlanner_${task.day}_${safeTime}_${new Date().toISOString().slice(0,10)}.ics`;
+      downloadICS(filename, content);
+    }
+
+    function downloadTaskICS(index) {
+      const task = store.tasks[index];
+      if (!task) return;
+      downloadICSForTask(task);
+    }
+
     function parseFromTextarea() {
       const mdText = document.getElementById('importInput').value.trim();
       if (!mdText) {
-        alert('請先在下面的文字盒子貼上 Markdown 文字喔！');
+        alert('請先在文字框貼上 Markdown 文字喔！');
         return;
       }
 
@@ -274,7 +361,7 @@
       const lines = mdText.split('\n');
       let currentSection = '';
       let currentDay = '';
-      let currentTime = 'morning';
+      let currentTime = '09:00';
 
       lines.forEach(line => {
         const trimmed = line.trim();
@@ -293,17 +380,17 @@
             if (hText) newHabits.push({ text: hText, done: isDone });
           }
         } else if (currentSection === 'tasks') {
-          if (trimmed.includes('Mon') || trimmed.includes('月曜')) currentDay = 'Mon';
-          else if (trimmed.includes('Tue') || trimmed.includes('火曜')) currentDay = 'Tue';
-          else if (trimmed.includes('Wed') || trimmed.includes('水曜')) currentDay = 'Wed';
-          else if (trimmed.includes('Thu') || trimmed.includes('木曜')) currentDay = 'Thu';
-          else if (trimmed.includes('Fri') || trimmed.includes('金曜')) currentDay = 'Fri';
-          else if (trimmed.includes('Sat') || trimmed.includes('土曜')) currentDay = 'Sat';
-          else if (trimmed.includes('Sun') || trimmed.includes('日曜')) currentDay = 'Sun';
+          if (trimmed.includes('Mon') || trimmed.includes('一')) currentDay = 'Mon';
+          else if (trimmed.includes('Tue') || trimmed.includes('二')) currentDay = 'Tue';
+          else if (trimmed.includes('Wed') || trimmed.includes('三')) currentDay = 'Wed';
+          else if (trimmed.includes('Thu') || trimmed.includes('四')) currentDay = 'Thu';
+          else if (trimmed.includes('Fri') || trimmed.includes('五')) currentDay = 'Fri';
+          else if (trimmed.includes('Sat') || trimmed.includes('六')) currentDay = 'Sat';
+          else if (trimmed.includes('Sun') || trimmed.includes('日')) currentDay = 'Sun';
 
-          if (trimmed.includes('上午')) currentTime = 'morning';
-          else if (trimmed.includes('下午')) currentTime = 'afternoon';
-          else if (trimmed.includes('晚上')) currentTime = 'night';
+          if (trimmed.includes('上午')) currentTime = '09:00';
+          else if (trimmed.includes('下午')) currentTime = '14:00';
+          else if (trimmed.includes('晚上')) currentTime = '19:00';
 
           if (trimmed.includes('[') && trimmed.includes(']')) {
             const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
@@ -321,8 +408,8 @@
       
       init();
       saveData();
-      document.getElementById('importInput').value = ''; // 清空輸入框
-      alert('🎉 成功！Markdown檔案匯入成功！');
+      document.getElementById('importInput').value = '';
+      alert('🎉 成功！Markdown 檔案匯入成功！');
     }
 
     function resetTemplate() {
