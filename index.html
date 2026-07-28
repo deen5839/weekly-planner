@@ -311,27 +311,48 @@
     }
 
     function exportMarkdown() {
-      let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
-      md += `## 🌱 習慣追蹤器\n`;
-      store.habits.forEach(h => md += `- [${h.done ? 'x' : ' '}] ${h.text}\n`);
-      md += `\n## 📅 週間排程\n`;
-      days.forEach(d => {
-        md += `### ${d.title}\n`;
-        const dayTasks = store.tasks
-          .filter(t => t.day === d.id)
-          .sort((a, b) => a.time.localeCompare(b.time));
-        dayTasks.forEach(t => {
-          md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`;
-        });
-        md += `\n`;
-      });
+  let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
+  md += `## 🌱 習慣追蹤器\n`;
+  store.habits.forEach(h => md += `- [${h.done ? 'x' : ' '}] ${h.text}\n`);
+  md += `\n## 📅 週間排程\n`;
+  
+  days.forEach(d => {
+    md += `### ${d.title}\n`;
+    const dayTasks = store.tasks.filter(t => t.day === d.id);
+    
+    // 分別篩選出 上午、下午、晚上的任務
+    const morningTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'morning');
+    const afternoonTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'afternoon');
+    const nightTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'night');
 
-      const blob = new Blob([md], { type: 'text/markdown' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
-      a.click();
+    if (morningTasks.length > 0) {
+      md += `#### 🌅 上午\n`;
+      morningTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
     }
+    
+    if (afternoonTasks.length > 0) {
+      md += `#### ☀️ 下午\n`;
+      afternoonTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+    }
+    
+    if (nightTasks.length > 0) {
+      md += `#### 🌙 晚上\n`;
+      nightTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+    }
+
+    if (dayTasks.length === 0) {
+      md += `*(無排程)*\n`;
+    }
+    
+    md += `\n`;
+  });
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+}
 
     function getTaskDate(dayId) {
       const today = new Date();
