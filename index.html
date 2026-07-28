@@ -115,12 +115,9 @@
       <option value="Sat">星期六 (Sat)</option>
       <option value="Sun">星期日 (Sun)</option>
     </select>
-    <select id="timeSelect">
-      <option value="morning">🌅 上午 (Morning)</option>
-      <option value="afternoon">☀️ 下午 (Afternoon)</option>
-      <option value="night">🌙 晚上 (Night)</option>
-    </select>
+    <input type="time" id="timeSelect" value="09:00" style="padding:0.5rem; border:1px solid var(--accent-border); border-radius:4px; background:#faf8f5;">
     <button class="btn btn-primary" onclick="addTask()">新增排程</button>
+    <button class="btn" onclick="addTask(true)">新增並加入行事曆</button>
   </div>
 
   <div class="planner-grid" id="plannerGrid"></div>
@@ -186,44 +183,42 @@
           <div class="day-card">
             <div class="day-header"><h3>${d.title}</h3></div>
             <div class="time-block">
-              <div class="time-title">🌅 上午</div>
-              <ul class="task-list" id="${d.id}-morning"></ul>
-            </div>
-            <div class="time-block">
-              <div class="time-title">☀️ 下午</div>
-              <ul class="task-list" id="${d.id}-afternoon"></ul>
-            </div>
-            <div class="time-block">
-              <div class="time-title">🌙 晚上</div>
-              <ul class="task-list" id="${d.id}-night"></ul>
+              <div class="time-title">📌 排程</div>
+              <ul class="task-list" id="${d.id}-tasks"></ul>
             </div>
           </div>`;
       });
 
-      store.tasks.forEach((t, i) => {
-        const listEl = document.getElementById(`${t.day}-${t.time}`);
+      const sortedTasks = [...store.tasks].sort((a, b) => a.time.localeCompare(b.time));
+      sortedTasks.forEach((t, i) => {
+        const listEl = document.getElementById(`${t.day}-tasks`);
         if (listEl) {
           listEl.innerHTML += `
             <li class="task-item">
-              <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${i})">
-                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${i})">
-                ${t.text}
+              <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${store.tasks.indexOf(t)})">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${store.tasks.indexOf(t)})">
+                <strong>${t.time}</strong> ${t.text}
               </span>
-              <button class="del-btn" onclick="deleteTask(${i})">✕</button>
+              <button class="btn" style="font-size:0.75rem; margin-left:0.5rem;" onclick="event.stopPropagation(); downloadTaskICS(${store.tasks.indexOf(t)})">加入手機行事曆</button>
+              <button class="del-btn" onclick="deleteTask(${store.tasks.indexOf(t)})">✕</button>
             </li>`;
         }
       });
     }
 
-    function addTask() {
+    function addTask(downloadCalendar = false) {
       const text = document.getElementById('taskInput').value.trim();
       const day = document.getElementById('daySelect').value;
       const time = document.getElementById('timeSelect').value;
-      if (!text) return;
-      store.tasks.push({ text, day, time, done: false });
+      if (!text || !time) return;
+      const task = { text, day, time, done: false };
+      store.tasks.push(task);
       document.getElementById('taskInput').value = '';
       renderGrid();
       saveData();
+      if (downloadCalendar) {
+        downloadICSForTask(task);
+      }
     }
 
     function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
@@ -241,13 +236,11 @@
       md += `\n## 📅 週間排程\n`;
       days.forEach(d => {
         md += `### ${d.title}\n`;
-        ['morning', 'afternoon', 'night'].forEach(time => {
-          const timeName = time === 'morning' ? '🌅 上午' : time === 'afternoon' ? '☀️ 下午' : '🌙 晚上';
-          const timeTasks = store.tasks.filter(t => t.day === d.id && t.time === time);
-          if (timeTasks.length > 0) {
-            md += `#### ${timeName}\n`;
-            timeTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
-          }
+        const dayTasks = store.tasks
+          .filter(t => t.day === d.id)
+          .sort((a, b) => a.time.localeCompare(b.time));
+        dayTasks.forEach(t => {
+          md += `- [${t.done ? 'x' : ' '}] ${t.time} ${t.text}\n`;
         });
         md += `\n`;
       });
@@ -257,6 +250,77 @@
       a.href = URL.createObjectURL(blob);
       a.download = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
       a.click();
+    }
+
+    function getTaskDate(dayId) {
+      const today = new Date();
+      const offsetMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+      const dayIndex = today.getDay();
+      const mondayOffset = (dayIndex + 6) % 7;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - mondayOffset);
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offsetMap[dayId]);
+      return date;
+    }
+
+    function getTaskDateTime(task) {
+      const date = getTaskDate(task.day);
+      const [hour, minute] = task.time.split(':').map(Number);
+      date.setHours(isNaN(hour) ? 9 : hour, isNaN(minute) ? 0 : minute, 0, 0);
+      return date;
+    }
+
+    function formatICSDate(date) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    }
+
+    function createICSContent(task) {
+      const eventStart = getTaskDateTime(task);
+      const eventEnd = new Date(eventStart);
+      eventEnd.setHours(eventEnd.getHours() + 1);
+      const dtstamp = formatICSDate(new Date());
+      const uid = `weekly-planner-${task.day}-${task.time}-${Date.now()}`;
+      return `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtstamp}
+SUMMARY:${task.text}
+DTSTART:${formatICSDate(eventStart)}
+DTEND:${formatICSDate(eventEnd)}
+DESCRIPTION:Weekly Planner 任務: ${task.text}
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:提醒：${task.text}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+    }
+
+    function downloadICS(filename, content) {
+      const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function downloadICSForTask(task) {
+      const content = createICSContent(task);
+      const safeTime = task.time.replace(':', '-');
+      const filename = `WeeklyPlanner_${task.day}_${safeTime}_${new Date().toISOString().slice(0,10)}.ics`;
+      downloadICS(filename, content);
+    }
+
+    function downloadTaskICS(index) {
+      const task = store.tasks[index];
+      if (!task) return;
+      downloadICSForTask(task);
     }
 
     // --- 從輸入框讀取並解析 ---
@@ -274,7 +338,7 @@
       const lines = mdText.split('\n');
       let currentSection = '';
       let currentDay = '';
-      let currentTime = 'morning';
+      let currentTime = '09:00';
 
       lines.forEach(line => {
         const trimmed = line.trim();
@@ -301,9 +365,9 @@
           else if (trimmed.includes('Sat') || trimmed.includes('土曜')) currentDay = 'Sat';
           else if (trimmed.includes('Sun') || trimmed.includes('日曜')) currentDay = 'Sun';
 
-          if (trimmed.includes('上午')) currentTime = 'morning';
-          else if (trimmed.includes('下午')) currentTime = 'afternoon';
-          else if (trimmed.includes('晚上')) currentTime = 'night';
+          if (trimmed.includes('上午')) currentTime = '09:00';
+          else if (trimmed.includes('下午')) currentTime = '14:00';
+          else if (trimmed.includes('晚上')) currentTime = '19:00';
 
           if (trimmed.includes('[') && trimmed.includes(']')) {
             const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
