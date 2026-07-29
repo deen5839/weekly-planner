@@ -77,7 +77,6 @@
     
     .task-list { list-style: none; }
     
-    /* 防擋字的清晰任務列 */
     .task-item { 
       display: flex; 
       align-items: flex-start; 
@@ -96,7 +95,7 @@
       cursor: pointer; 
       flex: 1; 
       line-height: 1.4;
-      word-break: break-word; /* 避免長字撐爆 */
+      word-break: break-word;
     }
     .task-content input[type="checkbox"] {
       margin-top: 3px;
@@ -178,23 +177,38 @@
 
   <script>
     const days = [
-      { id: 'Mon', title: '月曜日 Mon' }, { id: 'Tue', title: '火曜日 Tue' },
-      { id: 'Wed', title: '水曜日 Wed' }, { id: 'Thu', title: '木曜日 Thu' },
-      { id: 'Fri', title: '金曜日 Fri' }, { id: 'Sat', title: '土曜日 Sat' },
-      { id: 'Sun', title: '日曜日 Sun' }
+      { id: 'Mon', title: '星期一' }, { id: 'Tue', title: '星期二' },
+      { id: 'Wed', title: '星期三' }, { id: 'Thu', title: '星期四' },
+      { id: 'Fri', title: '星期五' }, { id: 'Sat', title: '星期六' },
+      { id: 'Sun', title: '星期日' }
     ];
 
-    const timeSlots = [
-      { key: 'morning', title: '🌅 上午', defaultTime: '09:00' },
-      { key: 'afternoon', title: '☀️ 下午', defaultTime: '14:00' },
-      { key: 'night', title: '🌙 晚上', defaultTime: '19:00' }
-    ];
+    // --- 安全資料載入 ---
+    function loadStoreData() {
+      try {
+        const data = localStorage.getItem('pro_weekly_data');
+        return data ? JSON.parse(data) : null;
+      } catch (e) {
+        console.error('讀取失敗：', e);
+        return null;
+      }
+    }
 
-    let store = JSON.parse(localStorage.getItem('pro_weekly_data')) || {
+    let store = loadStoreData() || {
       goal: '',
       habits: [],
       tasks: []
     };
+
+    function saveData(showAlert = false) {
+      try {
+        localStorage.setItem('pro_weekly_data', JSON.stringify(store));
+        if (showAlert) alert('✅ 計畫已成功儲存！');
+      } catch (e) {
+        console.error('儲存失敗：', e);
+        alert('⚠️ 儲存失敗！如果您使用的是 iPhone/Safari 無痕模式，請關閉無痕模式後再試試看喔！');
+      }
+    }
 
     function init() {
       document.getElementById('weeklyGoal').value = store.goal || '';
@@ -234,7 +248,6 @@
       document.getElementById('progressBar').style.width = percent + '%';
     }
 
-    // 歸類任務至 上午/下午/晚上
     function getTaskSlot(timeStr) {
       if (!timeStr) return 'morning';
       const hour = parseInt(timeStr.split(':')[0], 10);
@@ -305,77 +318,56 @@
     function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
     function deleteTask(i) { store.tasks.splice(i, 1); renderGrid(); saveData(); }
 
-    // 修改後的 saveData 函數（加上 Safari 相容性防護）
-function saveData(showAlert = false) {
-  try {
-    localStorage.setItem('pro_weekly_data', JSON.stringify(store));
-    if (showAlert) alert('✅ 計畫已成功儲存！');
-  } catch (e) {
-    console.error('儲存失敗：', e);
-    alert('⚠️ 儲存失敗！如果您使用的是 iPhone/Safari 無痕模式，請關閉無痕模式後再試試看喔！');
-  }
-}
-
-// 讀取資料的 Safari 安全防護
-function loadStoreData() {
-  try {
-    const data = localStorage.getItem('pro_weekly_data');
-    return data ? JSON.parse(data) : null;
-  } catch (e) {
-    console.error('讀取失敗：', e);
-    return null;
-  }
-}
-
-let store = loadStoreData() || {
-  goal: '',
-  habits: [],
-  tasks: []
-};
-
     function exportMarkdown() {
-  let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
-  md += `## 🌱 習慣追蹤器\n`;
-  store.habits.forEach(h => md += `- [${h.done ? 'x' : ' '}] ${h.text}\n`);
-  md += `\n## 📅 週間排程\n`;
-  
-  days.forEach(d => {
-    md += `### ${d.title}\n`;
-    const dayTasks = store.tasks.filter(t => t.day === d.id);
-    
-    // 分別篩選出 上午、下午、晚上的任務
-    const morningTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'morning');
-    const afternoonTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'afternoon');
-    const nightTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'night');
+      let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
+      md += `## 🌱 習慣追蹤器\n`;
+      store.habits.forEach(h => md += `- [${h.done ? 'x' : ' '}] ${h.text}\n`);
+      md += `\n## 📅 週間排程\n`;
+      
+      days.forEach(d => {
+        md += `### ${d.title}\n`;
+        const dayTasks = store.tasks.filter(t => t.day === d.id);
+        
+        const morningTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'morning');
+        const afternoonTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'afternoon');
+        const nightTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'night');
 
-    if (morningTasks.length > 0) {
-      md += `#### 🌅 上午\n`;
-      morningTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
-    }
-    
-    if (afternoonTasks.length > 0) {
-      md += `#### ☀️ 下午\n`;
-      afternoonTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
-    }
-    
-    if (nightTasks.length > 0) {
-      md += `#### 🌙 晚上\n`;
-      nightTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
-    }
+        if (morningTasks.length > 0) {
+          md += `#### 🌅 上午\n`;
+          morningTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+        }
+        
+        if (afternoonTasks.length > 0) {
+          md += `#### ☀️ 下午\n`;
+          afternoonTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+        }
+        
+        if (nightTasks.length > 0) {
+          md += `#### 🌙 晚上\n`;
+          nightTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+        }
 
-    if (dayTasks.length === 0) {
-      md += `*(無排程)*\n`;
-    }
-    
-    md += `\n`;
-  });
+        if (dayTasks.length === 0) {
+          md += `*(無排程)*\n`;
+        }
+        
+        md += `\n`;
+      });
 
-  const blob = new Blob([md], { type: 'text/markdown' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
-  a.click();
-}
+      const filename = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
+      const blob = new Blob([md], { type: 'application/octet-stream;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
 
     function getTaskDate(dayId) {
       const today = new Date();
@@ -515,11 +507,14 @@ END:VCALENDAR`;
 
     function resetTemplate() {
       if (confirm('確定要清空並重置所有內容嗎？')) {
-        localStorage.removeItem('pro_weekly_data');
+        try {
+          localStorage.removeItem('pro_weekly_data');
+        } catch(e) {}
         location.reload();
       }
     }
 
+    // 啟動初始化
     init();
   </script>
 </body>
