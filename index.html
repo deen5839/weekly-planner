@@ -305,10 +305,33 @@
     function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
     function deleteTask(i) { store.tasks.splice(i, 1); renderGrid(); saveData(); }
 
-    function saveData(showAlert = false) {
-      localStorage.setItem('pro_weekly_data', JSON.stringify(store));
-      if (showAlert) alert('✅ 計畫已成功儲存！');
-    }
+    // 修改後的 saveData 函數（加上 Safari 相容性防護）
+function saveData(showAlert = false) {
+  try {
+    localStorage.setItem('pro_weekly_data', JSON.stringify(store));
+    if (showAlert) alert('✅ 計畫已成功儲存！');
+  } catch (e) {
+    console.error('儲存失敗：', e);
+    alert('⚠️ 儲存失敗！如果您使用的是 iPhone/Safari 無痕模式，請關閉無痕模式後再試試看喔！');
+  }
+}
+
+// 讀取資料的 Safari 安全防護
+function loadStoreData() {
+  try {
+    const data = localStorage.getItem('pro_weekly_data');
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    console.error('讀取失敗：', e);
+    return null;
+  }
+}
+
+let store = loadStoreData() || {
+  goal: '',
+  habits: [],
+  tasks: []
+};
 
     function exportMarkdown() {
   let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
