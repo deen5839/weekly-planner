@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>極致週間計劃 | Weekly Pro Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #f7f4ef;
+      --card-bg: #ffffff;
+      --text-main: #363534;
+      --text-muted: #8c8883;
+      --accent-matcha: #889c83;
+      --accent-sakura: #d9a0a0;
+      --accent-border: #e2ddd5;
+      --border-radius: 8px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Serif TC', serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 1.5rem; min-height: 100vh; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; margin: 0 auto 1rem auto; flex-wrap: wrap; gap: 10px; }
+    header h1 { font-size: 1.6rem; letter-spacing: 2px; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { padding: 0.5rem 1rem; border: 1px solid var(--accent-border); border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+    .btn:hover { background: #efece6; }
+    .btn-primary { background: var(--accent-matcha); color: white; border: none; }
+    .btn-primary:hover { background: #74876f; }
+    .btn-danger { color: #b85c5c; border-color: #e8d3d8; }
+
+    /* 精緻行事曆標籤按鈕 */
+    .btn-icon-cal {
+      background: #faf8f5;
+      color: #74876f;
+      border: 1px solid #dcd7ce;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      margin-left: 4px;
+    }
+    .btn-icon-cal:hover {
+      background: var(--accent-matcha);
+      color: white;
+      border-color: var(--accent-matcha);
+    }
+
+    .import-box { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1rem; max-width: 1300px; margin: 0 auto 1.5rem auto; box-shadow: var(--shadow); }
+    .import-box textarea { width: 100%; height: 90px; border: 1px solid var(--accent-border); border-radius: 4px; padding: 0.5rem; background: #faf8f5; font-size: 0.85rem; resize: vertical; outline: none; }
+
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto 1.5rem auto; }
+    .dash-card { background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: var(--shadow); }
+    .dash-card h2 { font-size: 1.1rem; margin-bottom: 0.8rem; border-bottom: 2px solid var(--accent-border); padding-bottom: 0.3rem; display: flex; justify-content: space-between; align-items: center; }
+    
+    .progress-bar-bg { width: 100%; height: 8px; background: #efece6; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+    .progress-bar-fill { height: 100%; background: var(--accent-matcha); width: 0%; transition: width 0.3s ease; }
+
+    .controls { background: var(--card-bg); padding: 1rem; border-radius: var(--border-radius); border: 1px solid var(--accent-border); max-width: 1300px; margin: 0 auto 1.5rem auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .controls input, .controls select { padding: 0.5rem; border: 1px solid var(--accent-border); border-radius: 4px; outline: none; background: #faf8f5; }
+    .controls input[type="text"] { flex: 2; min-width: 180px; }
+
+    .planner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; max-width: 1300px; margin: 0 auto; }
+    .day-card { background: var(--card-bg); border-radius: var(--border-radius); border: 1px solid var(--accent-border); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+    .day-header { background: #f2eee9; padding: 0.6rem; text-align: center; border-bottom: 1px solid var(--accent-border); }
+    .day-header h3 { font-size: 1rem; color: var(--text-main); font-weight: 600; }
+    
+    .time-block { padding: 0.6rem; border-bottom: 1px dashed var(--accent-border); }
+    .time-block:last-child { border-bottom: none; }
+    .time-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 4px; }
+    
+    .task-list { list-style: none; }
+    
+    /* 防擋字的清晰任務列 */
+    .task-item { 
+      display: flex; 
+      align-items: flex-start; 
+      justify-content: space-between; 
+      padding: 0.35rem 0; 
+      font-size: 0.88rem; 
+      border-bottom: 1px dotted #eae5dd;
+      gap: 6px;
+    }
+    .task-item:last-child { border-bottom: none; }
+    
+    .task-content { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 6px; 
+      cursor: pointer; 
+      flex: 1; 
+      line-height: 1.4;
+      word-break: break-word; /* 避免長字撐爆 */
+    }
+    .task-content input[type="checkbox"] {
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+    .completed { text-decoration: line-through; color: var(--text-muted); }
+    
+    .task-actions { 
+      display: flex; 
+      align-items: center; 
+      gap: 2px; 
+      flex-shrink: 0; 
+      margin-top: 1px;
+    }
+    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 0 3px; }
+    .del-btn:hover { color: #b85c5c; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>週間計畫表</h1>
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="saveData(true)">💾 儲存計畫</button>
+      <button class="btn" onclick="exportMarkdown()">📝 匯出 Markdown</button>
+      <button class="btn btn-danger" onclick="resetTemplate()">🔄 重置範本</button>
+    </div>
+  </header>
+
+  <div class="import-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+      <span style="font-size:0.9rem; font-weight:600;">📥 貼上 Markdown 文字還原計畫：</span>
+      <button class="btn btn-primary" onclick="parseFromTextarea()">解析並匯入</button>
+    </div>
+    <textarea id="importInput" placeholder="把你的 Markdown 文字直接貼在這裡，然後按「解析並匯入」..."></textarea>
+  </div>
+
+  <div class="dashboard">
+    <div class="dash-card">
+      <h2>🎯 本週核心目標</h2>
+      <textarea id="weeklyGoal" style="width:100%; height:80px; border:1px solid var(--accent-border); padding:0.5rem; border-radius:4px; resize:none; outline:none; background:#faf8f5;" placeholder="寫下本週最重要突破的 1~2 件大事..."></textarea>
+    </div>
+
+    <div class="dash-card">
+      <h2>
+        <span>🌱 習慣追蹤器</span>
+        <span id="habitPercent" style="font-size:0.9rem; color:var(--accent-matcha);">0%</span>
+      </h2>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+      <div style="margin-top:0.8rem; display:flex; gap:5px;">
+        <input type="text" id="habitInput" placeholder="新增每日習慣..." style="flex:1; padding:0.4rem; border:1px solid var(--accent-border); border-radius:4px;">
+        <button class="btn" onclick="addHabit()">新增</button>
+      </div>
+      <ul id="habitList" style="list-style:none; margin-top:0.6rem;"></ul>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="taskInput" placeholder="寫下具體任務內容...">
+    <select id="daySelect">
+      <option value="Mon">星期一</option>
+      <option value="Tue">星期二</option>
+      <option value="Wed">星期三</option>
+      <option value="Thu">星期四</option>
+      <option value="Fri">星期五</option>
+      <option value="Sat">星期六</option>
+      <option value="Sun">星期日</option>
+    </select>
+    <select id="periodSelect">
+      <option value="09:00">🌅 上午 (09:00)</option>
+      <option value="14:00">☀️ 下午 (14:00)</option>
+      <option value="19:00">🌙 晚上 (19:00)</option>
+    </select>
+    <button class="btn btn-primary" onclick="addTask()">新增排程</button>
+    <button class="btn" onclick="addTask(true)">新增並同步至手機</button>
+  </div>
+
+  <div class="planner-grid" id="plannerGrid"></div>
+
+  <script>
+    const days = [
+      { id: 'Mon', title: '月曜日 Mon' }, { id: 'Tue', title: '火曜日 Tue' },
+      { id: 'Wed', title: '水曜日 Wed' }, { id: 'Thu', title: '木曜日 Thu' },
+      { id: 'Fri', title: '金曜日 Fri' }, { id: 'Sat', title: '土曜日 Sat' },
+      { id: 'Sun', title: '日曜日 Sun' }
+    ];
+
+    const timeSlots = [
+      { key: 'morning', title: '🌅 上午', defaultTime: '09:00' },
+      { key: 'afternoon', title: '☀️ 下午', defaultTime: '14:00' },
+      { key: 'night', title: '🌙 晚上', defaultTime: '19:00' }
+    ];
+
+    let store = JSON.parse(localStorage.getItem('pro_weekly_data')) || {
+      goal: '',
+      habits: [],
+      tasks: []
+    };
+
+    function init() {
+      document.getElementById('weeklyGoal').value = store.goal || '';
+      document.getElementById('weeklyGoal').addEventListener('input', (e) => { store.goal = e.target.value; saveData(); });
+      renderHabits();
+      renderGrid();
+    }
+
+    function addHabit() {
+      const input = document.getElementById('habitInput');
+      if (!input.value.trim()) return;
+      store.habits.push({ text: input.value.trim(), done: false });
+      input.value = '';
+      renderHabits();
+      saveData();
+    }
+
+    function toggleHabit(idx) { store.habits[idx].done = !store.habits[idx].done; renderHabits(); saveData(); }
+    function deleteHabit(idx) { store.habits.splice(idx, 1); renderHabits(); saveData(); }
+
+    function renderHabits() {
+      const list = document.getElementById('habitList');
+      list.innerHTML = '';
+      let doneCount = 0;
+      store.habits.forEach((h, i) => {
+        if (h.done) doneCount++;
+        list.innerHTML += `
+          <li style="display:flex; justify-content:space-between; align-items:center; padding:0.2rem 0;">
+            <label style="cursor:pointer; font-size:0.88rem;" class="${h.done ? 'completed' : ''}">
+              <input type="checkbox" ${h.done ? 'checked' : ''} onchange="toggleHabit(${i})"> ${h.text}
+            </label>
+            <button class="del-btn" onclick="deleteHabit(${i})">✕</button>
+          </li>`;
+      });
+      const percent = store.habits.length ? Math.round((doneCount / store.habits.length) * 100) : 0;
+      document.getElementById('habitPercent').innerText = percent + '%';
+      document.getElementById('progressBar').style.width = percent + '%';
+    }
+
+    // 歸類任務至 上午/下午/晚上
+    function getTaskSlot(timeStr) {
+      if (!timeStr) return 'morning';
+      const hour = parseInt(timeStr.split(':')[0], 10);
+      if (hour < 12) return 'morning';
+      if (hour < 18) return 'afternoon';
+      return 'night';
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('plannerGrid');
+      grid.innerHTML = '';
+
+      days.forEach(d => {
+        grid.innerHTML += `
+          <div class="day-card">
+            <div class="day-header"><h3>${d.title}</h3></div>
+            <div class="time-block">
+              <div class="time-title">🌅 上午</div>
+              <ul class="task-list" id="${d.id}-morning-tasks"></ul>
+            </div>
+            <div class="time-block">
+              <div class="time-title">☀️ 下午</div>
+              <ul class="task-list" id="${d.id}-afternoon-tasks"></ul>
+            </div>
+            <div class="time-block">
+              <div class="time-title">🌙 晚上</div>
+              <ul class="task-list" id="${d.id}-night-tasks"></ul>
+            </div>
+          </div>`;
+      });
+
+      const sortedTasks = [...store.tasks].sort((a, b) => a.time.localeCompare(b.time));
+      sortedTasks.forEach((t) => {
+        const slot = getTaskSlot(t.time);
+        const listEl = document.getElementById(`${t.day}-${slot}-tasks`);
+        const realIndex = store.tasks.indexOf(t);
+        if (listEl) {
+          listEl.innerHTML += `
+            <li class="task-item">
+              <span class="task-content ${t.done ? 'completed' : ''}" onclick="toggleTask(${realIndex})">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleTask(${realIndex})">
+                <span>${t.text}</span>
+              </span>
+              <div class="task-actions">
+                <button class="btn-icon-cal" title="加入手機行事曆" onclick="event.stopPropagation(); downloadTaskICS(${realIndex})">📅 加行事曆</button>
+                <button class="del-btn" onclick="deleteTask(${realIndex})">✕</button>
+              </div>
+            </li>`;
+        }
+      });
+    }
+
+    function addTask(downloadCalendar = false) {
+      const text = document.getElementById('taskInput').value.trim();
+      const day = document.getElementById('daySelect').value;
+      const time = document.getElementById('periodSelect').value;
+      if (!text) return;
+      const task = { text, day, time, done: false };
+      store.tasks.push(task);
+      document.getElementById('taskInput').value = '';
+      renderGrid();
+      saveData();
+      if (downloadCalendar) {
+        downloadICSForTask(task);
+      }
+    }
+
+    function toggleTask(i) { store.tasks[i].done = !store.tasks[i].done; renderGrid(); saveData(); }
+    function deleteTask(i) { store.tasks.splice(i, 1); renderGrid(); saveData(); }
+
+    function saveData(showAlert = false) {
+      localStorage.setItem('pro_weekly_data', JSON.stringify(store));
+      if (showAlert) alert('✅ 計畫已成功儲存！');
+    }
+
+    function exportMarkdown() {
+  let md = `# 📝 本週核心目標\n${store.goal || '未設定'}\n\n`;
+  md += `## 🌱 習慣追蹤器\n`;
+  store.habits.forEach(h => md += `- [${h.done ? 'x' : ' '}] ${h.text}\n`);
+  md += `\n## 📅 週間排程\n`;
+  
+  days.forEach(d => {
+    md += `### ${d.title}\n`;
+    const dayTasks = store.tasks.filter(t => t.day === d.id);
+    
+    // 分別篩選出 上午、下午、晚上的任務
+    const morningTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'morning');
+    const afternoonTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'afternoon');
+    const nightTasks = dayTasks.filter(t => getTaskSlot(t.time) === 'night');
+
+    if (morningTasks.length > 0) {
+      md += `#### 🌅 上午\n`;
+      morningTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+    }
+    
+    if (afternoonTasks.length > 0) {
+      md += `#### ☀️ 下午\n`;
+      afternoonTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+    }
+    
+    if (nightTasks.length > 0) {
+      md += `#### 🌙 晚上\n`;
+      nightTasks.forEach(t => md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`);
+    }
+
+    if (dayTasks.length === 0) {
+      md += `*(無排程)*\n`;
+    }
+    
+    md += `\n`;
+  });
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Weekly_Planner_${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+}
+
+    function getTaskDate(dayId) {
+      const today = new Date();
+      const offsetMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+      const dayIndex = today.getDay();
+      const mondayOffset = (dayIndex + 6) % 7;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - mondayOffset);
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offsetMap[dayId]);
+      return date;
+    }
+
+    function getTaskDateTime(task) {
+      const date = getTaskDate(task.day);
+      const [hour, minute] = task.time.split(':').map(Number);
+      date.setHours(isNaN(hour) ? 9 : hour, isNaN(minute) ? 0 : minute, 0, 0);
+      return date;
+    }
+
+    function formatICSDate(date) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    }
+
+    function createICSContent(task) {
+      const eventStart = getTaskDateTime(task);
+      const eventEnd = new Date(eventStart);
+      eventEnd.setHours(eventEnd.getHours() + 1);
+      const dtstamp = formatICSDate(new Date());
+      const uid = `weekly-planner-${task.day}-${task.time}-${Date.now()}`;
+      return `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtstamp}
+SUMMARY:${task.text}
+DTSTART:${formatICSDate(eventStart)}
+DTEND:${formatICSDate(eventEnd)}
+DESCRIPTION:Weekly Planner 任務: ${task.text}
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:提醒：${task.text}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+    }
+
+    function downloadICS(filename, content) {
+      const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function downloadICSForTask(task) {
+      const content = createICSContent(task);
+      const safeTime = task.time.replace(':', '-');
+      const filename = `WeeklyPlanner_${task.day}_${safeTime}_${new Date().toISOString().slice(0,10)}.ics`;
+      downloadICS(filename, content);
+    }
+
+    function downloadTaskICS(index) {
+      const task = store.tasks[index];
+      if (!task) return;
+      downloadICSForTask(task);
+    }
+
+    function parseFromTextarea() {
+      const mdText = document.getElementById('importInput').value.trim();
+      if (!mdText) {
+        alert('請先在文字框貼上 Markdown 文字喔！');
+        return;
+      }
+
+      let newGoal = '';
+      let newHabits = [];
+      let newTasks = [];
+
+      const lines = mdText.split('\n');
+      let currentSection = '';
+      let currentDay = '';
+      let currentTime = '09:00';
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        if (trimmed.includes('本週核心目標')) { currentSection = 'goal'; return; }
+        if (trimmed.includes('習慣追蹤器')) { currentSection = 'habits'; return; }
+        if (trimmed.includes('週間排程')) { currentSection = 'tasks'; return; }
+
+        if (currentSection === 'goal') {
+          if (trimmed !== '未設定' && !trimmed.startsWith('#')) newGoal += trimmed + ' ';
+        } else if (currentSection === 'habits') {
+          if (trimmed.includes('[') && trimmed.includes(']')) {
+            const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+            const hText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+            if (hText) newHabits.push({ text: hText, done: isDone });
+          }
+        } else if (currentSection === 'tasks') {
+          if (trimmed.includes('Mon') || trimmed.includes('一')) currentDay = 'Mon';
+          else if (trimmed.includes('Tue') || trimmed.includes('二')) currentDay = 'Tue';
+          else if (trimmed.includes('Wed') || trimmed.includes('三')) currentDay = 'Wed';
+          else if (trimmed.includes('Thu') || trimmed.includes('四')) currentDay = 'Thu';
+          else if (trimmed.includes('Fri') || trimmed.includes('五')) currentDay = 'Fri';
+          else if (trimmed.includes('Sat') || trimmed.includes('六')) currentDay = 'Sat';
+          else if (trimmed.includes('Sun') || trimmed.includes('日')) currentDay = 'Sun';
+
+          if (trimmed.includes('上午')) currentTime = '09:00';
+          else if (trimmed.includes('下午')) currentTime = '14:00';
+          else if (trimmed.includes('晚上')) currentTime = '19:00';
+
+          if (trimmed.includes('[') && trimmed.includes(']')) {
+            const isDone = trimmed.includes('[x]') || trimmed.includes('[X]');
+            const tText = trimmed.replace(/.*\[[ xX]\]/, '').trim();
+            if (tText && currentDay) {
+              newTasks.push({ text: tText, day: currentDay, time: currentTime, done: isDone });
+            }
+          }
+        }
+      });
+
+      store.goal = newGoal.trim();
+      store.habits = newHabits;
+      store.tasks = newTasks;
+      
+      init();
+      saveData();
+      document.getElementById('importInput').value = '';
+      alert('🎉 成功！Markdown 檔案匯入成功！');
+    }
+
+    function resetTemplate() {
+      if (confirm('確定要清空並重置所有內容嗎？')) {
+        localStorage.removeItem('pro_weekly_data');
+        location.reload();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
